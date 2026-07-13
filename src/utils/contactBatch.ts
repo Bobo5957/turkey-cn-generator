@@ -59,8 +59,7 @@ export interface ContactBatchOptions {
   target: ContactBatchTarget
   email: string
   action: 'add' | 'remove'
-  onlyMatched: boolean
-  matchedContactIds: Set<string>
+  scopeContactIds?: Set<string>
 }
 
 export function batchUpdateContactEmails(
@@ -78,7 +77,7 @@ export function batchUpdateContactEmails(
   let affectedCount = 0
 
   const nextContacts = contacts.map((contact) => {
-    if (options.onlyMatched && !options.matchedContactIds.has(contact.id)) {
+    if (options.scopeContactIds && !options.scopeContactIds.has(contact.id)) {
       return contact
     }
 

@@ -48,7 +48,7 @@ export function ContactConfig({
   const [draft, setDraft] = useState<ContactMapping[]>(contacts)
   const [batchEmail, setBatchEmail] = useState('')
   const [batchTarget, setBatchTarget] = useState<ContactBatchTarget>('CC地址')
-  const [batchOnlyMatched, setBatchOnlyMatched] = useState(false)
+  const [batchOnlyFiltered, setBatchOnlyFiltered] = useState(true)
   const [batchMessage, setBatchMessage] = useState('')
   const [filterTrader, setFilterTrader] = useState('')
   const [filterActivity, setFilterActivity] = useState('')
@@ -144,6 +144,17 @@ export function ContactConfig({
   const hasActiveFilters =
     filterTrader !== '' || filterActivity !== '' || filterOnlyMatched
 
+  const filteredContactIds = useMemo(
+    () => new Set(filteredContacts.map((contact) => contact.id)),
+    [filteredContacts],
+  )
+
+  useEffect(() => {
+    if (filterTrader || filterActivity || filterOnlyMatched) {
+      setBatchOnlyFiltered(true)
+    }
+  }, [filterTrader, filterActivity, filterOnlyMatched])
+
   const clearFilters = () => {
     setFilterTrader('')
     setFilterActivity('')
@@ -156,8 +167,7 @@ export function ContactConfig({
       target: batchTarget,
       email: batchEmail,
       action,
-      onlyMatched: batchOnlyMatched,
-      matchedContactIds,
+      scopeContactIds: batchOnlyFiltered ? filteredContactIds : undefined,
     })
 
     if (!batchEmail.trim().includes('@')) {
@@ -169,7 +179,7 @@ export function ContactConfig({
       setBatchMessage(
         action === 'add'
           ? '没有可更新的规则（可能已存在该邮箱）'
-          : '没有规则包含该邮箱',
+          : '筛选范围内没有规则包含该邮箱',
       )
       return
     }
@@ -180,12 +190,14 @@ export function ContactConfig({
       onChange(result.contacts)
     }
 
-    const scopeLabel = batchOnlyMatched ? '当前匹配' : '全部'
+    const scopeLabel = batchOnlyFiltered
+      ? `筛选结果 ${filteredContacts.length} 条中的`
+      : '全部'
     const targetLabel =
       batchTarget === 'both' ? '收件人 + CC' : batchTarget === '收件人地址' ? '收件人' : 'CC'
     const actionLabel = action === 'add' ? '添加' : '删除'
     setBatchMessage(
-      `已在 ${result.affectedCount} 条${scopeLabel}规则的${targetLabel}中${actionLabel} ${batchEmail.trim()}`,
+      `已在 ${result.affectedCount} 条${scopeLabel}${targetLabel}中${actionLabel} ${batchEmail.trim()}`,
     )
   }
 
@@ -286,7 +298,7 @@ export function ContactConfig({
               disabled={!isEditing && matchedContactIds.size === 0}
               onChange={(e) => setFilterOnlyMatched(e.target.checked)}
             />
-            仅当前匹配
+            仅表格 A 匹配
           </label>
           <button
             type="button"
@@ -303,7 +315,7 @@ export function ContactConfig({
         <div className="contact-batch-header">
           <h3>批量编辑邮箱</h3>
           <p className="contact-batch-desc">
-            在多条规则的收件人或 CC 列表中，批量添加或删除同一个邮箱
+            在收件人或 CC 列表中批量添加/删除邮箱。勾选「仅筛选结果」后，只作用于上方筛选出的规则。
             {isEditing && '（编辑模式下修改草稿，需保存编辑后生效）'}
           </p>
         </div>
@@ -334,11 +346,10 @@ export function ContactConfig({
           <label className="contact-batch-checkbox">
             <input
               type="checkbox"
-              checked={batchOnlyMatched}
-              disabled={matchedContactIds.size === 0}
-              onChange={(e) => setBatchOnlyMatched(e.target.checked)}
+              checked={batchOnlyFiltered}
+              onChange={(e) => setBatchOnlyFiltered(e.target.checked)}
             />
-            仅当前匹配的 {matchedContactIds.size || 0} 条规则
+            仅筛选结果（{filteredContacts.length} 条）
           </label>
           <div className="contact-batch-actions">
             <button
