@@ -102,18 +102,33 @@ export function ContactConfig({
   const isEditing = mode === 'edit'
   const visibleContacts = isEditing ? draft : contacts
 
-  const filteredContacts = useMemo(() => {
-    const traderQuery = filterTrader.trim().toLowerCase()
-    const activityQuery = filterActivity.trim().toLowerCase()
+  const traderOptions = useMemo(() => {
+    const values = new Set<string>()
+    for (const contact of visibleContacts) {
+      const value = contact.交易客户.trim()
+      if (value) values.add(value)
+    }
+    return Array.from(values).sort((a, b) => a.localeCompare(b))
+  }, [visibleContacts])
 
+  const activityOptions = useMemo(() => {
+    const values = new Set<string>()
+    for (const contact of visibleContacts) {
+      const value = contact.活动客户.trim()
+      if (value) values.add(value)
+    }
+    return Array.from(values).sort((a, b) => a.localeCompare(b))
+  }, [visibleContacts])
+
+  const filteredContacts = useMemo(() => {
     return visibleContacts.filter((contact) => {
       if (filterOnlyMatched && !matchedContactIds.has(contact.id)) {
         return false
       }
-      if (traderQuery && !contact.交易客户.toLowerCase().includes(traderQuery)) {
+      if (filterTrader && contact.交易客户.trim() !== filterTrader) {
         return false
       }
-      if (activityQuery && !contact.活动客户.toLowerCase().includes(activityQuery)) {
+      if (filterActivity && contact.活动客户.trim() !== filterActivity) {
         return false
       }
       return true
@@ -127,9 +142,7 @@ export function ContactConfig({
   ])
 
   const hasActiveFilters =
-    filterTrader.trim() !== '' ||
-    filterActivity.trim() !== '' ||
-    filterOnlyMatched
+    filterTrader !== '' || filterActivity !== '' || filterOnlyMatched
 
   const clearFilters = () => {
     setFilterTrader('')
@@ -240,21 +253,31 @@ export function ContactConfig({
         <div className="contact-filter-form">
           <label>
             交易客户
-            <input
-              type="text"
+            <select
               value={filterTrader}
               onChange={(e) => setFilterTrader(e.target.value)}
-              placeholder="输入关键词筛选"
-            />
+            >
+              <option value="">全部（{traderOptions.length} 项）</option>
+              {traderOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             活动客户
-            <input
-              type="text"
+            <select
               value={filterActivity}
               onChange={(e) => setFilterActivity(e.target.value)}
-              placeholder="输入关键词筛选"
-            />
+            >
+              <option value="">全部（{activityOptions.length} 项）</option>
+              {activityOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="contact-filter-checkbox">
             <input
