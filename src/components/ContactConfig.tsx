@@ -10,8 +10,6 @@ type ContactMode = 'preview' | 'edit'
 
 interface ContactConfigProps {
   contacts: ContactMapping[]
-  matchedContactIds: Set<string>
-  unmatchedGroupCount: number
   onChange: (contacts: ContactMapping[]) => void
   onReset: () => void
 }
@@ -39,8 +37,6 @@ function ContactPreviewCell({ value, isEmail = false }: { value: string; isEmail
 
 export function ContactConfig({
   contacts,
-  matchedContactIds,
-  unmatchedGroupCount,
   onChange,
   onReset,
 }: ContactConfigProps) {
@@ -52,7 +48,6 @@ export function ContactConfig({
   const [batchMessage, setBatchMessage] = useState('')
   const [filterTrader, setFilterTrader] = useState('')
   const [filterActivity, setFilterActivity] = useState('')
-  const [filterOnlyMatched, setFilterOnlyMatched] = useState(false)
 
   useEffect(() => {
     if (mode === 'preview') {
@@ -122,9 +117,6 @@ export function ContactConfig({
 
   const filteredContacts = useMemo(() => {
     return visibleContacts.filter((contact) => {
-      if (filterOnlyMatched && !matchedContactIds.has(contact.id)) {
-        return false
-      }
       if (filterTrader && contact.交易客户.trim() !== filterTrader) {
         return false
       }
@@ -133,16 +125,9 @@ export function ContactConfig({
       }
       return true
     })
-  }, [
-    visibleContacts,
-    filterTrader,
-    filterActivity,
-    filterOnlyMatched,
-    matchedContactIds,
-  ])
+  }, [visibleContacts, filterTrader, filterActivity])
 
-  const hasActiveFilters =
-    filterTrader !== '' || filterActivity !== '' || filterOnlyMatched
+  const hasActiveFilters = filterTrader !== '' || filterActivity !== ''
 
   const filteredContactIds = useMemo(
     () => new Set(filteredContacts.map((contact) => contact.id)),
@@ -150,15 +135,14 @@ export function ContactConfig({
   )
 
   useEffect(() => {
-    if (filterTrader || filterActivity || filterOnlyMatched) {
+    if (filterTrader || filterActivity) {
       setBatchOnlyFiltered(true)
     }
-  }, [filterTrader, filterActivity, filterOnlyMatched])
+  }, [filterTrader, filterActivity])
 
   const clearFilters = () => {
     setFilterTrader('')
     setFilterActivity('')
-    setFilterOnlyMatched(false)
   }
 
   const applyBatchUpdate = (action: 'add' | 'remove') => {
@@ -207,17 +191,7 @@ export function ContactConfig({
         <div>
           <h2>收件人配置</h2>
           <p className="panel-desc">
-            根据交易客户 + 活动客户匹配收件人和 CC，共 {contacts.length} 条规则
-            {mode === 'preview' && matchedContactIds.size > 0 && (
-              <span className="contact-match-summary">
-                · 当前匹配 {matchedContactIds.size} 条
-              </span>
-            )}
-            {mode === 'preview' && unmatchedGroupCount > 0 && (
-              <span className="contact-unmatched-summary">
-                · {unmatchedGroupCount} 组未匹配
-              </span>
-            )}
+            按交易客户 + 活动客户维护收件人和 CC，共 {contacts.length} 条规则
           </p>
         </div>
         <div className="panel-actions">
@@ -250,7 +224,7 @@ export function ContactConfig({
         </span>
         {!isEditing && (
           <span className="contact-mode-hint">
-            预览模式下，与当前表格 A 匹配的规则会高亮显示
+            预览模式下可直接批量编辑邮箱，修改后立即保存
           </span>
         )}
       </div>
@@ -290,15 +264,6 @@ export function ContactConfig({
                 </option>
               ))}
             </select>
-          </label>
-          <label className="contact-filter-checkbox">
-            <input
-              type="checkbox"
-              checked={filterOnlyMatched}
-              disabled={!isEditing && matchedContactIds.size === 0}
-              onChange={(e) => setFilterOnlyMatched(e.target.checked)}
-            />
-            仅表格 A 匹配
           </label>
           <button
             type="button"
@@ -386,14 +351,8 @@ export function ContactConfig({
             </tr>
           </thead>
           <tbody>
-            {filteredContacts.map((contact) => {
-              const isMatched = !isEditing && matchedContactIds.has(contact.id)
-
-              return (
-                <tr
-                  key={contact.id}
-                  className={isMatched ? 'contact-row-matched' : undefined}
-                >
+            {filteredContacts.map((contact) => (
+                <tr key={contact.id}>
                   <td>
                     {isEditing ? (
                       <input
@@ -463,8 +422,7 @@ export function ContactConfig({
                     </td>
                   )}
                 </tr>
-              )
-            })}
+            ))}
           </tbody>
         </table>
         )}

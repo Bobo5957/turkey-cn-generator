@@ -75,26 +75,6 @@ function App() {
     [rows, contacts, tableConfig],
   )
 
-  const matchedContactIds = useMemo(() => {
-    const ids = new Set<string>()
-    for (const group of processedGroups) {
-      if (group.contactMatch.matched && group.contactMatch.contactId) {
-        ids.add(group.contactMatch.contactId)
-      }
-    }
-    return ids
-  }, [processedGroups])
-
-  const unmatchedGroupCount = useMemo(
-    () =>
-      processedGroups.filter(
-        (group) =>
-          !group.contactMatch.matched &&
-          (group.trader.trim() || group.activity.trim()),
-      ).length,
-    [processedGroups],
-  )
-
   const activeVariant = useMemo(() => {
     const firstCurrency = rows.find((row) => row[tableConfig.currencyField]?.trim())?.[
       tableConfig.currencyField
@@ -197,8 +177,6 @@ function App() {
         />
         <ContactConfig
           contacts={contacts}
-          matchedContactIds={matchedContactIds}
-          unmatchedGroupCount={unmatchedGroupCount}
           onChange={setContacts}
           onReset={handleResetContacts}
         />
