@@ -716,6 +716,78 @@
   flex-wrap: wrap;
 }
 
+.contact-filter-panel {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.contact-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.contact-filter-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.contact-filter-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.contact-filter-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.contact-filter-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.contact-filter-form input[type='text'] {
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.contact-filter-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  align-self: center;
+  white-space: nowrap;
+  font-size: 12px !important;
+}
+
+.contact-filter-checkbox input {
+  width: auto;
+}
+
+.contact-filter-empty {
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .contact-batch-panel {
   margin-bottom: 14px;
   padding: 14px 16px;
@@ -948,6 +1020,10 @@
   }
 
   .contact-batch-form {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-filter-form {
     grid-template-columns: 1fr;
   }
 

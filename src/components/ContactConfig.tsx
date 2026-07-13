@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ContactMapping } from '../types'
 import {
   batchUpdateContactEmails,
@@ -50,6 +50,9 @@ export function ContactConfig({
   const [batchTarget, setBatchTarget] = useState<ContactBatchTarget>('CC地址')
   const [batchOnlyMatched, setBatchOnlyMatched] = useState(false)
   const [batchMessage, setBatchMessage] = useState('')
+  const [filterTrader, setFilterTrader] = useState('')
+  const [filterActivity, setFilterActivity] = useState('')
+  const [filterOnlyMatched, setFilterOnlyMatched] = useState(false)
 
   useEffect(() => {
     if (mode === 'preview') {
@@ -98,6 +101,41 @@ export function ContactConfig({
 
   const isEditing = mode === 'edit'
   const visibleContacts = isEditing ? draft : contacts
+
+  const filteredContacts = useMemo(() => {
+    const traderQuery = filterTrader.trim().toLowerCase()
+    const activityQuery = filterActivity.trim().toLowerCase()
+
+    return visibleContacts.filter((contact) => {
+      if (filterOnlyMatched && !matchedContactIds.has(contact.id)) {
+        return false
+      }
+      if (traderQuery && !contact.交易客户.toLowerCase().includes(traderQuery)) {
+        return false
+      }
+      if (activityQuery && !contact.活动客户.toLowerCase().includes(activityQuery)) {
+        return false
+      }
+      return true
+    })
+  }, [
+    visibleContacts,
+    filterTrader,
+    filterActivity,
+    filterOnlyMatched,
+    matchedContactIds,
+  ])
+
+  const hasActiveFilters =
+    filterTrader.trim() !== '' ||
+    filterActivity.trim() !== '' ||
+    filterOnlyMatched
+
+  const clearFilters = () => {
+    setFilterTrader('')
+    setFilterActivity('')
+    setFilterOnlyMatched(false)
+  }
 
   const applyBatchUpdate = (action: 'add' | 'remove') => {
     const source = isEditing ? draft : contacts
@@ -192,6 +230,52 @@ export function ContactConfig({
         )}
       </div>
 
+      <div className="contact-filter-panel">
+        <div className="contact-filter-header">
+          <h3>筛选规则</h3>
+          <span className="contact-filter-count">
+            显示 {filteredContacts.length} / {visibleContacts.length} 条
+          </span>
+        </div>
+        <div className="contact-filter-form">
+          <label>
+            交易客户
+            <input
+              type="text"
+              value={filterTrader}
+              onChange={(e) => setFilterTrader(e.target.value)}
+              placeholder="输入关键词筛选"
+            />
+          </label>
+          <label>
+            活动客户
+            <input
+              type="text"
+              value={filterActivity}
+              onChange={(e) => setFilterActivity(e.target.value)}
+              placeholder="输入关键词筛选"
+            />
+          </label>
+          <label className="contact-filter-checkbox">
+            <input
+              type="checkbox"
+              checked={filterOnlyMatched}
+              disabled={!isEditing && matchedContactIds.size === 0}
+              onChange={(e) => setFilterOnlyMatched(e.target.checked)}
+            />
+            仅当前匹配
+          </label>
+          <button
+            type="button"
+            className="btn btn-ghost btn-compact"
+            onClick={clearFilters}
+            disabled={!hasActiveFilters}
+          >
+            清空筛选
+          </button>
+        </div>
+      </div>
+
       <div className="contact-batch-panel">
         <div className="contact-batch-header">
           <h3>批量编辑邮箱</h3>
@@ -254,6 +338,9 @@ export function ContactConfig({
       </div>
 
       <div className="contacts-table-wrapper">
+        {filteredContacts.length === 0 ? (
+          <p className="contact-filter-empty">没有符合筛选条件的规则</p>
+        ) : (
         <table className="contacts-table">
           <thead>
             <tr>
@@ -265,7 +352,7 @@ export function ContactConfig({
             </tr>
           </thead>
           <tbody>
-            {visibleContacts.map((contact) => {
+            {filteredContacts.map((contact) => {
               const isMatched = !isEditing && matchedContactIds.has(contact.id)
 
               return (
@@ -346,6 +433,7 @@ export function ContactConfig({
             })}
           </tbody>
         </table>
+        )}
       </div>
     </section>
   )
