@@ -19,10 +19,12 @@ import { processRows } from './utils/rowProcessing'
 import { loadSettings, saveSettings } from './utils/storage'
 import {
   createDefaultTableConfig,
+  getAmountFieldsFromConfig,
   migrateRowsByFieldOrder,
   syncKeyFieldsOnRename,
   syncTableBSourcesOnFieldRename,
 } from './utils/tableConfig'
+import { normalizeRowsAmountFields } from './utils/numbers'
 import './App.css'
 
 function App() {
@@ -36,6 +38,10 @@ function App() {
   const [loaded, setLoaded] = useState(false)
 
   const tableAFields = tableConfig.tableAFields
+  const amountFields = useMemo(
+    () => getAmountFieldsFromConfig(tableConfig),
+    [tableConfig],
+  )
 
   useEffect(() => {
     const saved = loadSettings()
@@ -121,7 +127,7 @@ function App() {
   }
 
   const handleParsed = (parsedRows: Record<string, string>[]) => {
-    setRows(parsedRows)
+    setRows(normalizeRowsAmountFields(parsedRows, amountFields))
   }
 
   const handleAddRow = () => {
@@ -160,6 +166,7 @@ function App() {
         <PasteArea tableAFields={tableAFields} onParsed={handleParsed} />
         <DataTable
           fields={tableAFields}
+          amountFields={amountFields}
           rows={rows}
           onChange={setRows}
           onAddRow={handleAddRow}

@@ -65,6 +65,19 @@ export const DEFAULT_TABLE_B_COLUMNS: TableBColumnConfig[] = [
   },
 ]
 
+export function getAmountFieldsFromConfig(config: TableConfig): string[] {
+  const fields = new Set<string>()
+  for (const column of config.tableBColumns) {
+    if (column.mappingType === 'amount' && column.sourceField?.trim()) {
+      fields.add(column.sourceField.trim())
+    }
+    if (column.mappingType === 'vat_included' && column.amountField?.trim()) {
+      fields.add(column.amountField.trim())
+    }
+  }
+  return Array.from(fields)
+}
+
 export function createDefaultTableConfig(): TableConfig {
   return {
     tableAFields: [...DEFAULT_FIELDS],

@@ -1,17 +1,5 @@
 import type { TableBColumnConfig, TableConfig } from '../types'
-
-function parseAmount(value: string): number | null {
-  const trimmed = value.trim()
-  if (!trimmed) return null
-  const num = parseFloat(trimmed.replace(/,/g, ''))
-  return Number.isFinite(num) ? num : null
-}
-
-function formatAmount(value: number | null): string {
-  if (value === null) return ''
-  const rounded = Math.round(value * 10) / 10
-  return String(rounded)
-}
+import { formatAmount, normalizeDecimalString, parseAmount } from './numbers'
 
 export function transformToTableB(
   rowData: Record<string, string>,
@@ -27,11 +15,10 @@ export function transformToTableB(
         result[column.name] = rowData[column.sourceField ?? ''] ?? ''
         break
       case 'amount': {
-        const amount = parseAmount(rowData[column.sourceField ?? ''] ?? '')
+        const raw = rowData[column.sourceField ?? ''] ?? ''
+        const amount = parseAmount(raw)
         result[column.name] =
-          amount !== null
-            ? formatAmount(amount)
-            : (rowData[column.sourceField ?? ''] ?? '')
+          amount !== null ? formatAmount(amount) : normalizeDecimalString(raw)
         break
       }
       case 'currency_if': {

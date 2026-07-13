@@ -12,9 +12,22 @@ interface ContactConfigProps {
   onReset: () => void
 }
 
-function ContactPreviewCell({ value }: { value: string }) {
+function ContactPreviewCell({ value, isEmail = false }: { value: string; isEmail?: boolean }) {
   if (!value.trim()) {
     return <span className="contact-preview-empty">—</span>
+  }
+
+  if (isEmail) {
+    const emails = value.split(';').map((item) => item.trim()).filter(Boolean)
+    return (
+      <div className="contact-preview-cell contact-preview-emails">
+        {emails.map((email, index) => (
+          <span key={`${email}-${index}`} className="contact-email-chip">
+            {email}
+          </span>
+        ))}
+      </div>
+    )
   }
 
   return <div className="contact-preview-cell">{value}</div>
@@ -188,7 +201,7 @@ export function ContactConfig({
                         rows={2}
                       />
                     ) : (
-                      <ContactPreviewCell value={contact.收件人地址} />
+                      <ContactPreviewCell value={contact.收件人地址} isEmail />
                     )}
                   </td>
                   <td>
@@ -202,7 +215,7 @@ export function ContactConfig({
                         rows={2}
                       />
                     ) : (
-                      <ContactPreviewCell value={contact.CC地址} />
+                      <ContactPreviewCell value={contact.CC地址} isEmail />
                     )}
                   </td>
                   {isEditing && (

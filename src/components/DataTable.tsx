@@ -1,17 +1,36 @@
+import { normalizeDecimalString } from '../utils/numbers'
+
 interface DataTableProps {
   fields: string[]
+  amountFields: string[]
   rows: Record<string, string>[]
   onChange: (rows: Record<string, string>[]) => void
   onAddRow: () => void
   onClear: () => void
 }
 
-export function DataTable({ fields, rows, onChange, onAddRow, onClear }: DataTableProps) {
+export function DataTable({
+  fields,
+  amountFields,
+  rows,
+  onChange,
+  onAddRow,
+  onClear,
+}: DataTableProps) {
+  const amountFieldSet = new Set(amountFields)
+
   const updateCell = (rowIndex: number, field: string, value: string) => {
     const nextRows = rows.map((row, index) =>
       index === rowIndex ? { ...row, [field]: value } : row,
     )
     onChange(nextRows)
+  }
+
+  const finalizeCell = (rowIndex: number, field: string, value: string) => {
+    if (!amountFieldSet.has(field)) return
+    const normalized = normalizeDecimalString(value)
+    if (normalized === value) return
+    updateCell(rowIndex, field, normalized)
   }
 
   const deleteRow = (rowIndex: number) => {
@@ -61,6 +80,7 @@ export function DataTable({ fields, rows, onChange, onAddRow, onClear }: DataTab
                       type="text"
                       value={row[field] ?? ''}
                       onChange={(e) => updateCell(rowIndex, field, e.target.value)}
+                      onBlur={(e) => finalizeCell(rowIndex, field, e.target.value)}
                       placeholder={`输入${field || '内容'}`}
                     />
                   </td>
