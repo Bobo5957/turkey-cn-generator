@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ConfigSharePanel } from './components/ConfigSharePanel'
 import { ContactConfig } from './components/ContactConfig'
 import { DataTable } from './components/DataTable'
 import { RowResults } from './components/RowResults'
@@ -17,6 +18,7 @@ import {
 import { getTemplateVariant } from './utils/emailTemplate'
 import { processRows } from './utils/rowProcessing'
 import { loadSettings, saveSettings } from './utils/storage'
+import type { AppConfigBundle } from './utils/configBundle'
 import {
   createDefaultTableConfig,
   getAmountFieldsFromConfig,
@@ -155,6 +157,21 @@ function App() {
     setContacts(resetContacts())
   }
 
+  const handleImportConfig = (bundle: AppConfigBundle) => {
+    const nextTableConfig = bundle.settings.tableConfig
+    setEnglishTemplate(bundle.settings.englishTemplate)
+    setTurkishTemplate(bundle.settings.turkishTemplate)
+    setTableConfig(nextTableConfig)
+    setContacts(bundle.contacts)
+    setRows((currentRows) =>
+      migrateRowsByFieldOrder(
+        currentRows,
+        tableAFields,
+        nextTableConfig.tableAFields,
+      ),
+    )
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -184,6 +201,13 @@ function App() {
           unmatchedGroupCount={unmatchedGroupCount}
           onChange={setContacts}
           onReset={handleResetContacts}
+        />
+        <ConfigSharePanel
+          englishTemplate={englishTemplate}
+          turkishTemplate={turkishTemplate}
+          tableConfig={tableConfig}
+          contacts={contacts}
+          onImport={handleImportConfig}
         />
         <div className="config-grid">
           <TemplatePanel

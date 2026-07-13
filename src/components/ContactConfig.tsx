@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { ContactMapping } from '../types'
+import {
+  batchUpdateContactEmails,
+  type ContactBatchTarget,
+} from '../utils/contactBatch'
 import { createEmptyContact, normalizeEmails } from '../utils/contacts'
 
 type ContactMode = 'preview' | 'edit'
@@ -42,6 +46,10 @@ export function ContactConfig({
 }: ContactConfigProps) {
   const [mode, setMode] = useState<ContactMode>('preview')
   const [draft, setDraft] = useState<ContactMapping[]>(contacts)
+  const [batchEmail, setBatchEmail] = useState('')
+  const [batchTarget, setBatchTarget] = useState<ContactBatchTarget>('CC地址')
+  const [batchOnlyMatched, setBatchOnlyMatched] = useState(false)
+  const [batchMessage, setBatchMessage] = useState('')
 
   useEffect(() => {
     if (mode === 'preview') {
@@ -52,11 +60,13 @@ export function ContactConfig({
   const startEdit = () => {
     setDraft(contacts.map((contact) => ({ ...contact })))
     setMode('edit')
+    setBatchMessage('')
   }
 
   const cancelEdit = () => {
     setDraft(contacts)
     setMode('preview')
+    setBatchMessage('')
   }
 
   const saveEdit = () => {
@@ -67,6 +77,7 @@ export function ContactConfig({
     }))
     onChange(normalized)
     setMode('preview')
+    setBatchMessage('')
   }
 
   const updateRow = (id: string, field: keyof ContactMapping, value: string) => {
@@ -87,6 +98,45 @@ export function ContactConfig({
 
   const isEditing = mode === 'edit'
   const visibleContacts = isEditing ? draft : contacts
+
+  const applyBatchUpdate = (action: 'add' | 'remove') => {
+    const source = isEditing ? draft : contacts
+    const result = batchUpdateContactEmails(source, {
+      target: batchTarget,
+      email: batchEmail,
+      action,
+      onlyMatched: batchOnlyMatched,
+      matchedContactIds,
+    })
+
+    if (!batchEmail.trim().includes('@')) {
+      setBatchMessage('请输入有效的邮箱地址')
+      return
+    }
+
+    if (result.affectedCount === 0) {
+      setBatchMessage(
+        action === 'add'
+          ? '没有可更新的规则（可能已存在该邮箱）'
+          : '没有规则包含该邮箱',
+      )
+      return
+    }
+
+    if (isEditing) {
+      setDraft(result.contacts)
+    } else {
+      onChange(result.contacts)
+    }
+
+    const scopeLabel = batchOnlyMatched ? '当前匹配' : '全部'
+    const targetLabel =
+      batchTarget === 'both' ? '收件人 + CC' : batchTarget === '收件人地址' ? '收件人' : 'CC'
+    const actionLabel = action === 'add' ? '添加' : '删除'
+    setBatchMessage(
+      `已在 ${result.affectedCount} 条${scopeLabel}规则的${targetLabel}中${actionLabel} ${batchEmail.trim()}`,
+    )
+  }
 
   return (
     <section className="panel panel-contacts">
@@ -140,6 +190,67 @@ export function ContactConfig({
             预览模式下，与当前表格 A 匹配的规则会高亮显示
           </span>
         )}
+      </div>
+
+      <div className="contact-batch-panel">
+        <div className="contact-batch-header">
+          <h3>批量编辑邮箱</h3>
+          <p className="contact-batch-desc">
+            在多条规则的收件人或 CC 列表中，批量添加或删除同一个邮箱
+            {isEditing && '（编辑模式下修改草稿，需保存编辑后生效）'}
+          </p>
+        </div>
+        <div className="contact-batch-form">
+          <label>
+            目标列
+            <select
+              value={batchTarget}
+              onChange={(e) => setBatchTarget(e.target.value as ContactBatchTarget)}
+            >
+              <option value="收件人地址">收件人</option>
+              <option value="CC地址">CC</option>
+              <option value="both">收件人 + CC</option>
+            </select>
+          </label>
+          <label className="contact-batch-email">
+            邮箱地址
+            <input
+              type="email"
+              value={batchEmail}
+              onChange={(e) => {
+                setBatchEmail(e.target.value)
+                if (batchMessage) setBatchMessage('')
+              }}
+              placeholder="someone@xiaomi.com"
+            />
+          </label>
+          <label className="contact-batch-checkbox">
+            <input
+              type="checkbox"
+              checked={batchOnlyMatched}
+              disabled={matchedContactIds.size === 0}
+              onChange={(e) => setBatchOnlyMatched(e.target.checked)}
+            />
+            仅当前匹配的 {matchedContactIds.size || 0} 条规则
+          </label>
+          <div className="contact-batch-actions">
+            <button
+              type="button"
+              className="btn btn-secondary btn-compact"
+              onClick={() => applyBatchUpdate('add')}
+            >
+              批量添加
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-compact"
+              onClick={() => applyBatchUpdate('remove')}
+            >
+              批量删除
+            </button>
+          </div>
+        </div>
+        {batchMessage && <p className="contact-batch-message">{batchMessage}</p>}
       </div>
 
       <div className="contacts-table-wrapper">
